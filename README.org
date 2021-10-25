@@ -1,0 +1,2 @@
+* dataflow-diagram-mode
+This is an Emacs major mode for editing source files of [[https://github.com/sonyxperiadev/dataflow][dataflow]].
