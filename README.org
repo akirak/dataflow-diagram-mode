@@ -1,2 +1,4 @@
 * dataflow-diagram-mode
 This is an Emacs major mode for editing source files of [[https://github.com/sonyxperiadev/dataflow][dataflow]].
+
+For Org Babel support, you can use [[https://github.com/akirak/ob-dataflow][ob-dataflow]].
