@@ -85,7 +85,7 @@
     (and (nth 3 ppss) (= ?\" (nth 3 ppss)))))
 
 (defun dataflow-diagram--empty-line-p ()
-  "Return non-nil if the current line contains only spaces."
+  "Return non-nil if the current line contain only spaces."
   (save-excursion
     (beginning-of-line 1)
     (looking-at (rx (* space) eol))))
