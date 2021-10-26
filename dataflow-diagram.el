@@ -79,54 +79,69 @@
   "Indent offset in `dataflow-diagram-mode'."
   :type 'number)
 
+(defun dataflow-diagram--in-double-quotes-p ()
+  "Return non-nil if inside a double-quoted string."
+  (let ((ppss (syntax-ppss)))
+    (and (nth 3 ppss) (= ?\" (nth 3 ppss)))))
+
+(defun dataflow-diagram--indent-level ()
+  "Return the desired indentation level at point."
+  (let ((ppss (syntax-ppss)))
+    (cond
+     ;; Inside a comment or backtick pair
+     ((or (nth 4 ppss)
+          (and (nth 3 ppss) (= ?\` (nth 3 ppss))))
+      (let ((string-start (nth 8 ppss)))
+        (if (looking-at (rx (* space) "*/"))
+            (save-excursion
+              (goto-char string-start)
+              (current-indentation))
+          (save-excursion
+            (beginning-of-line 0)
+            (if (> (point) string-start)
+                (back-to-indentation)
+              (goto-char string-start)
+              (re-search-forward (rx (or "`" "/*")))
+              (unless (eolp)
+                (re-search-forward (rx (* space)))))
+            (car (posn-col-row (posn-at-point (point))))))))
+     ;; Top-level
+     ((= 0 (nth 0 ppss))
+      0)
+     ;; The first item inside a block
+     ((looking-back (rx "{" (* space)) (nth 1 ppss))
+      (let ((prev-indent (save-excursion
+                           (goto-char (nth 1 ppss))
+                           (current-indentation))))
+        (if (looking-at (rx (* space) "}"))
+            (indent-line-to prev-indent)
+          (+ prev-indent dataflow-diagram-indent-offset))))
+     ;; Before the close of a block
+     ((looking-at (rx (* space) "}"))
+      (save-excursion
+        (goto-char (nth 1 ppss))
+        (current-indentation)))
+     (t
+      (save-excursion
+        (goto-char (nth 1 ppss))
+        (down-list)
+        (re-search-forward (rx (* space)))
+        (current-indentation))))))
+
+(defun dataflow-diagram--delete-space-after-point ()
+  "Delete space after the point."
+  (when (looking-at (rx (+ space)))
+    (let ((start (point)))
+      (re-search-forward (rx (+ space)))
+      (delete-region start (point)))))
+
 (defun dataflow-diagram-indent-line ()
   "Indent the current line in `dataflow-diagram-mode'."
   (interactive)
-  (let ((ppss (syntax-ppss)))
-    (if (and (nth 3 ppss) (= ?\" (nth 3 ppss)))
-        ;; Inside double quotes
-        'noindent
-      (cond
-       ;; Inside a comment or backtick pair
-       ((or (nth 4 ppss)
-            (and (nth 3 ppss) (= ?\` (nth 3 ppss))))
-        (let ((string-start (nth 8 ppss)))
-          (if (looking-at (rx (* space) "*/"))
-              (indent-line-to (save-excursion
-                                (goto-char string-start)
-                                (current-indentation)))
-            (indent-line-to (save-excursion
-                              (beginning-of-line 0)
-                              (if (> (point) string-start)
-                                  (back-to-indentation)
-                                (goto-char string-start)
-                                (re-search-forward (rx (or "`" "/*")))
-                                (unless (eolp)
-                                  (re-search-forward (rx (* space)))))
-                              (car (posn-col-row (posn-at-point (point)))))))))
-       ((= 0 (nth 0 ppss))
-        (indent-line-to 0))
-       ((looking-back (rx "{" (* space)) (nth 1 ppss))
-        (let ((prev-indent (save-excursion
-                             (goto-char (nth 1 ppss))
-                             (current-indentation))))
-          (if (looking-at (rx (* space) "}"))
-              (indent-line-to prev-indent)
-            (indent-line-to (+ prev-indent dataflow-diagram-indent-offset)))))
-       ((looking-at (rx (* space) "}"))
-        (indent-line-to (save-excursion
-                          (goto-char (nth 1 ppss))
-                          (current-indentation))))
-       (t
-        (indent-line-to (save-excursion
-                          (goto-char (nth 1 ppss))
-                          (down-list)
-                          (re-search-forward (rx (* space)))
-                          (current-indentation)))))
-      (when (looking-at (rx (+ space)))
-        (let ((start (point)))
-          (re-search-forward (rx (+ space)))
-          (delete-region start (point)))))))
+  (if (dataflow-diagram--in-double-quotes-p)
+      'noindent
+    (indent-line-to (dataflow-diagram--indent-level))
+    (dataflow-diagram--delete-space-after-point)))
 
 (define-derived-mode dataflow-diagram-mode prog-mode "Dataflow"
   "Major mode for dataflow."
