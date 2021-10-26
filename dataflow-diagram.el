@@ -84,6 +84,12 @@
   (let ((ppss (syntax-ppss)))
     (and (nth 3 ppss) (= ?\" (nth 3 ppss)))))
 
+(defun dataflow-diagram--empty-line-p ()
+  "Return non-nil if the current line contains only spaces."
+  (save-excursion
+    (beginning-of-line 1)
+    (looking-at (rx (* space) eol))))
+
 (defun dataflow-diagram--indent-level ()
   "Return the desired indentation level at point."
   (let ((ppss (syntax-ppss)))
@@ -97,7 +103,6 @@
               (goto-char string-start)
               (current-indentation))
           (save-excursion
-            (beginning-of-line 0)
             (if (> (point) string-start)
                 (back-to-indentation)
               (goto-char string-start)
@@ -107,6 +112,8 @@
             (car (posn-col-row (posn-at-point (point))))))))
      ;; Top-level
      ((= 0 (nth 0 ppss))
+      0)
+     ((dataflow-diagram--empty-line-p)
       0)
      ;; The first item inside a block
      ((looking-back (rx "{" (* space)) (nth 1 ppss))
@@ -132,16 +139,22 @@
   "Delete space after the point."
   (when (looking-at (rx (+ space)))
     (let ((start (point)))
-      (re-search-forward (rx (+ space)))
+      (re-search-forward (rx (* space)))
       (delete-region start (point)))))
+
+(defun dataflow-diagram--indent-line ()
+  "Indent the current line but don't restore the point."
+  (back-to-indentation)
+  (indent-line-to (dataflow-diagram--indent-level))
+  (dataflow-diagram--delete-space-after-point))
 
 (defun dataflow-diagram-indent-line ()
   "Indent the current line in `dataflow-diagram-mode'."
   (interactive)
-  (if (dataflow-diagram--in-double-quotes-p)
-      'noindent
-    (indent-line-to (dataflow-diagram--indent-level))
-    (dataflow-diagram--delete-space-after-point)))
+  (if (looking-back (rx bol (* space)) (line-beginning-position))
+      (dataflow-diagram--indent-line)
+    (save-excursion
+      (dataflow-diagram--indent-line))))
 
 (define-derived-mode dataflow-diagram-mode prog-mode "Dataflow"
   "Major mode for dataflow."
