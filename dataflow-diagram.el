@@ -79,11 +79,6 @@
   "Indent offset in `dataflow-diagram-mode'."
   :type 'number)
 
-(defun dataflow-diagram--in-double-quotes-p ()
-  "Return non-nil if inside a double-quoted string."
-  (let ((ppss (syntax-ppss)))
-    (and (nth 3 ppss) (= ?\" (nth 3 ppss)))))
-
 (defun dataflow-diagram--empty-line-p ()
   "Return non-nil if the current line contain only spaces."
   (save-excursion
