@@ -151,6 +151,7 @@
     (save-excursion
       (dataflow-diagram--indent-line))))
 
+;;;###autoload
 (define-derived-mode dataflow-diagram-mode prog-mode "Dataflow"
   "Major mode for dataflow."
   :group 'dataflow-diagram
