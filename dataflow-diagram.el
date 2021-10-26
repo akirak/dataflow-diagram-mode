@@ -37,6 +37,11 @@
   "Major mode for editing dataflow diagrams."
   :group 'tools)
 
+(defcustom dataflow-diagram-executable "dataflow"
+  "Path to the executable of dataflow."
+  :type 'file
+  :group 'dataflow-diagram)
+
 (defvar dataflow-diagram-font-lock-keywords
   `(("\\(?:boundary\\|database\\|function\\|io\\)[[:space:]]+\\([A-Za-z][0-9A-Z_a-z]*\\)"
      (1 font-lock-function-name-face))
